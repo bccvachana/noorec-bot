@@ -2,5 +2,5 @@
     "appSecret": "40d8d3084864b3a58190be0adfe0f1ab",
     "pageAccessToken": "EAAIKLfNh1AMBALzJIQBUMd4rX26EH9WKLkl7WEDya8nlGZAAM9pkhx0BxpODsH8fOCk5EzwGNjCyYTulgTsKvzP0VxgPkDqf4YYO5uQLycHGr9y00xoFqy0FckbcMZBwTO9pB8KSNZC4x3HTtYfdXzFUHW620XGLcOyr7CfpgZDZD",
     "validationToken": "bcc32861",
-    "serverURL": "https://localhost/"
+    "serverURL": "https://git.heroku.com/evening-reef-36736.git"
 }
