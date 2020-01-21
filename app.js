@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 /*
  * Copyright 2016-present, Facebook, Inc.
  * All rights reserved.
@@ -55,6 +57,82 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
   console.error("Missing config values");
   process.exit(1);
 }
+
+// DIALOGFLOW //
+
+const projectId = 'noorec-mdt-kmutt'
+const queries = [
+  'สวัสดี'
+]
+const languageCode = 'th'
+
+// Imports the Dialogflow library
+const dialogflow = require('dialogflow');
+const uuid = require('uuid');
+const sessionId = uuid.v4();
+
+// Instantiates a session client
+const sessionClient = new dialogflow.SessionsClient();
+
+async function detectIntent(
+  projectId,
+  sessionId,
+  query,
+  contexts,
+  languageCode
+) {
+  // The path to identify the agent that owns the created intent.
+  const sessionPath = sessionClient.sessionPath(projectId, sessionId);
+
+  // The text query request.
+  const request = {
+    session: sessionPath,
+    queryInput: {
+      text: {
+        text: query,
+        languageCode: languageCode,
+      },
+    },
+  };
+
+  if (contexts && contexts.length > 0) {
+    request.queryParams = {
+      contexts: contexts,
+    };
+  }
+
+  const responses = await sessionClient.detectIntent(request);
+  return responses[0];
+}
+
+// async function executeQueries(projectId, sessionId, queries, languageCode) {
+//   // Keeping the context across queries let's us simulate an ongoing conversation with the bot
+//   let context;
+//   let intentResponse;
+//   for (const query of queries) {
+//     try {
+//       console.log(`Sending Query: ${query}`);
+//       intentResponse = await detectIntent(
+//         projectId,
+//         sessionId,
+//         query,
+//         context,
+//         languageCode
+//       );
+//       console.log('Detected intent');
+//       console.log(
+//         `Fulfillment Text: ${intentResponse.queryResult.fulfillmentText}`
+//       );
+//       // Use the context from this response for next queries
+//       context = intentResponse.queryResult.outputContexts;
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
+// }
+// executeQueries(projectId, sessionId, queries, languageCode);
+
+// DIALOGFLOW //
 
 /*
  * Use your own validation token. Check that the token used in the Webhook 
@@ -215,7 +293,7 @@ function receivedAuthentication(event) {
  * then we'll simply confirm that we've received the attachment.
  * 
  */
-function receivedMessage(event) {
+async function receivedMessage(event) {
   var senderID = event.sender.id;
   var recipientID = event.recipient.id;
   var timeOfMessage = event.timestamp;
@@ -248,6 +326,36 @@ function receivedMessage(event) {
     sendTextMessage(senderID, "Quick reply tapped");
     return;
   }
+
+  // DIALOGFLOW //
+
+  console.log(':::dialogflow:::');
+  
+  let detectMessageIntent = async (messageText) => {
+    let context;
+    try {
+      console.log(`Sending Query: ${messageText}`);
+      intentResponse = await detectIntent(
+        projectId,
+        sessionId,
+        messageText,
+        context,
+        languageCode
+      );
+      console.log('Detected intent');
+      console.log(
+        `Fulfillment Text: ${intentResponse.queryResult.fulfillmentText}`
+      );
+      // Use the context from this response for next queries
+    } catch (error) {
+      console.log(error);
+    }
+    return intentResponse.queryResult.fulfillmentText
+  }
+
+  let responseText = await detectMessageIntent(messageText)
+
+  // DIALOGFLOW //
 
   if (messageText) {
 
@@ -308,7 +416,11 @@ function receivedMessage(event) {
         break;
 
       default:
-        sendTextMessage(senderID, messageText);
+        if (responseText) {
+          sendTextMessage(senderID, responseText);
+        } else {
+          sendTextMessage(senderID, messageText);
+        }
     }
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
